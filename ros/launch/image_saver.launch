@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <arg name="input_topic" default="/head_camera/rgb/image_rect_color" />
+    <arg name="node_name"   default="image_saver" />
+    <arg name="output"      default="screen" />
+    <arg name="home_path"   default="$(optenv HOME !!NO_HOME_SET!!)" />
+
+    <!-- The images are saved in this folder, the folder is made if it does not exists yet -->
+    <arg name="image_folder_output"     default="~/image_saver_output" />
+    <!-- The images are saved with this period -->
+    <arg name="save_period"             default="0.5" />
+    <!-- enable this to save images with timestamps and indices from file -->
+    <arg name="enable_timestamps"       default="false" />
+    <!-- Whether the informations related to each image are saved in one or separate files -->
+    <arg name="only_one_info_file"      default="false" />
+    <!-- The reference point is saved for each image, in camera frame -->
+    <arg name="save_reference_points"   default="true" />
+    <arg name="fixed_frame"             default="map" />
+
+    <!-- These params are used to play bags datasets, recorder with mbot_benchmarking recording -->
+    <arg name="play_bags"               default="false" />
+    <arg name="dataset_path"            default="$(arg home_path)/ds/" />
+    <arg name="dataset_bag_name"        default="" />
+
+    <node required="true" pkg="image_saver" type="image_saver_node" name="$(arg node_name)" output="$(arg output)" >
+        <remap from="~images_in"            to="$(arg input_topic)" />
+        <param name="save_period"           value="$(arg save_period)"              type="double" />
+        <param name="save_reference_points" value="$(arg save_reference_points)"    type="bool" />
+        <param name="only_one_info_file"    value="$(arg only_one_info_file)"       type="bool" />
+        <param name="image_folder_output"   value="$(arg image_folder_output)"      type="string" />
+        <param name="fixed_frame"           value="$(arg fixed_frame)"              type="string" />
+        <rosparam if="$(arg enable_timestamps)"     command="load"  file="$(find image_saver)/ros/config/example_timestamps.yaml" />
+        <rosparam if="$(arg save_reference_points)" command="load"  file="$(find image_saver)/ros/config/objects_reference_points_$(arg dataset_bag_name).yaml" />
+    </node>
+
+    <param if="$(arg play_bags)" name="use_sim_time" value="true" type="bool" />
+
+    <node if="$(arg play_bags)" required="true" pkg="rosbag" type="play" name="rosbag_play" output="screen" args=" --clock 
+        $(arg dataset_path)/$(arg dataset_bag_name)_basic_sensors.bag 
+        $(arg dataset_path)/$(arg dataset_bag_name)_cameras.bag       " />
+
+</launch> 
